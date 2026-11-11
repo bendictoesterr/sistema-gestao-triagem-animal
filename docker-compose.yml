@@ -1,0 +1,33 @@
+# Sobe o MySQL do projeto já com os dois bancos criados:
+#   - db_analise_publica  (tabela intakes_raw, dados públicos)
+#   - db_abrigo_backend   (tabelas, views e dados de exemplo do sistema)
+#
+# Uso:   docker compose up -d
+# Reset: docker compose down -v   (apaga o volume; os scripts de ./sql rodam de novo)
+#
+# Se a porta 3306 já estiver ocupada (ex.: MySQL instalado no Windows), rode com
+#   DB_PORT=3307 docker compose up -d     (PowerShell: $env:DB_PORT=3307; docker compose up -d)
+# e use a mesma variável DB_PORT ao rodar importar_csv.py e o app.
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_abrigo
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_abrigo_data:/var/lib/mysql
+      # Os .sql desta pasta rodam em ordem alfabética, só na primeira criação do volume
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql_abrigo_data:
